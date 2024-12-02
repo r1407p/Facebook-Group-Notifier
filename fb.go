@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"FBCrawler/FBCrawler"
 )
 
 func parseArgs() (string, string, string, int) {
@@ -20,14 +21,10 @@ func parseArgs() (string, string, string, int) {
 	return *account, *password, *groupID, *postLimit
 }
 
-func fbCrawler(account, password, groupID string, postLimit int) {
-	fmt.Println("Account:", account)
-	fmt.Println("Password:", password)
-	fmt.Println("Group ID:", groupID)
-	fmt.Println("Post Limit:", postLimit)
-}
 
 func main() {
 	account, password, groupID, postLimit := parseArgs()
-	fbCrawler(account, password, groupID, postLimit)
+	fbcrawler := FBCrawler.NewFBCrawler(account, password, []string{groupID}, postLimit)
+	fmt.Println(fbcrawler)
+
 }
