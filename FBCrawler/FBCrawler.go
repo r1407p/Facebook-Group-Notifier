@@ -4,13 +4,14 @@ import (
 	"log"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
+	"time"
 )
 type FBCrawler struct {
 	Account   string
 	Password  string
 	GroupIDs  []string
 	PostLimit int
-	driver	selenium.WebDriver
+	Driver	selenium.WebDriver
 }
 
 func NewFBCrawler(account, password string, groupIDs []string, postLimit int) *FBCrawler {
@@ -32,13 +33,14 @@ func NewFBCrawler(account, password string, groupIDs []string, postLimit int) *F
 	if err != nil {
 		log.Fatal("Failed to initialize driver:", err)
 	}
-	defer driver.Quit()
+	// defer driver.Quit()
 
 	return &FBCrawler{
 		Account:   account,
 		Password:  password,
 		GroupIDs:  groupIDs,
 		PostLimit: postLimit,
+		Driver: driver,
 	}
 }
 
@@ -55,4 +57,33 @@ func initializeDriver(opts []selenium.ServiceOption, caps selenium.Capabilities)
 	}
 
 	return driver, nil
+}
+
+func (fbc *FBCrawler) LoginToFacebook() error {
+	if err := fbc.Driver.Get("https://www.facebook.com"); err != nil {
+		return err
+	}
+
+	time.Sleep(2 * time.Second) // Wait for page load
+
+	// Login
+	if email, err := fbc.Driver.FindElement(selenium.ByCSSSelector, "input[name='email']"); err == nil {
+		email.SendKeys(fbc.Account)
+	} else {
+		return fmt.Errorf("couldn't find email input: %v", err)
+	}
+
+	if pass, err := fbc.Driver.FindElement(selenium.ByCSSSelector, "input[name='pass']"); err == nil {
+		pass.SendKeys(fbc.Password)
+	} else {
+		return fmt.Errorf("couldn't find password input: %v", err)
+	}
+
+	if loginBtn, err := fbc.Driver.FindElement(selenium.ByCSSSelector, "button[name='login']"); err == nil {
+		loginBtn.Click()
+	} else {
+		return fmt.Errorf("couldn't find login button: %v", err)
+	}
+	time.Sleep(3 * time.Second) // Wait for login
+	return nil
 }
