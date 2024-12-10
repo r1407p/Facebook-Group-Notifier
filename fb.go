@@ -38,13 +38,17 @@ func main() {
 	for _, keyword := range keywords {
 		fbcrawler.AddKeyword(keyword)
 	}
-	postInfos, err := fbcrawler.ScanGroupPostsWithTopK(5)
-	if err != nil {
-		log.Fatal("Failed to scan group posts:", err)
-	}
-
-	for _, postInfo := range postInfos {
-		fmt.Println(postInfo)
+	for {
+		fmt.Println("Scanning for new posts...")
+		newPosts, err := fbcrawler.ScanGroupPostsWithTopK(5)
+		if err != nil {
+			log.Fatal("Failed to scan group posts:", err)
+		}
+		for _, post := range newPosts {
+			fmt.Println(post)
+		}
+		fmt.Println("Waiting for 10 minutes...")
+		time.Sleep(10 * time.Minute)
 	}
 	return
 }

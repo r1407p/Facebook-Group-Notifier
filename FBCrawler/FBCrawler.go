@@ -12,6 +12,7 @@ type FBCrawler struct {
 	GroupID  string
 	PostLimit int
 	keywords  []string
+	viewedPosts [] PostInfo
 	Driver	selenium.WebDriver
 }
 
@@ -40,6 +41,7 @@ func NewFBCrawler(account string, password string, groupID string, postLimit int
 		GroupID:   groupID,
 		PostLimit: postLimit,
 		keywords:  []string{},
+		viewedPosts: []PostInfo{},
 		Driver:    driver,
 	}
 }
@@ -158,8 +160,23 @@ func (f *FBCrawler) ScanGroupPostsWithTopK(topK int) ([]PostInfo, error) {
 			break
 		}
 	}
+	newPosts := []PostInfo{}
+	for _, post := range allPosts {
+		if !f.hasViewedPost(post) {
+			f.viewedPosts = append(f.viewedPosts, post)
+			newPosts = append(newPosts, post)
+		}
+	}
+	return newPosts, nil
+}
 
-	return allPosts[:postsFound], nil
+func (f *FBCrawler) hasViewedPost(post PostInfo) bool {
+	for _, viewedPost := range f.viewedPosts {
+		if viewedPost.Content == post.Content {
+			return true
+		}
+	}
+	return false
 }
 
 func (f *FBCrawler) expandPosts() {
