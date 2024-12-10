@@ -9,43 +9,41 @@ import (
 type FBCrawler struct {
 	Account   string
 	Password  string
-	GroupIDs  []string
+	GroupID  string
 	PostLimit int
 	Driver	selenium.WebDriver
 }
 
-func NewFBCrawler(account, password string, groupIDs []string, postLimit int) *FBCrawler {
+func NewFBCrawler(account string, password string, groupID string, postLimit int) *FBCrawler {
 	opts := []selenium.ServiceOption{}
-	caps := selenium.Capabilities{
-		"browserName": "chrome",
-	}
+	caps := selenium.Capabilities{"browserName": "chrome"}
 	chromeCaps := chrome.Capabilities{
 		Args: []string{
 			"--no-sandbox",
 			"--disable-dev-shm-usage",
-			"--disable-notifications",
+			"--disable-notifications", // Block notifications
 			"--start-maximized",
-			"--headless",
 		},
 	}
 	caps.AddChrome(chromeCaps)
+
+	// Start Chrome
 	driver, err := initializeDriver(opts, caps)
 	if err != nil {
 		log.Fatal("Failed to initialize driver:", err)
 	}
-	// defer driver.Quit()
 
 	return &FBCrawler{
 		Account:   account,
 		Password:  password,
-		GroupIDs:  groupIDs,
+		GroupID:   groupID,
 		PostLimit: postLimit,
-		Driver: driver,
+		Driver:    driver,
 	}
 }
 
 func initializeDriver(opts []selenium.ServiceOption, caps selenium.Capabilities) (selenium.WebDriver, error) {
-	service, err := selenium.NewChromeDriverService("chromedriver", 9515, opts...)
+	service, err := selenium.NewChromeDriverService("./chromedriver.exe", 9515, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start ChromeDriver: %v", err)
 	}
@@ -84,6 +82,7 @@ func (fbc *FBCrawler) LoginToFacebook() error {
 	} else {
 		return fmt.Errorf("couldn't find login button: %v", err)
 	}
-	time.Sleep(3 * time.Second) // Wait for login
+
+	time.Sleep(30 * time.Second) // Wait for login
 	return nil
 }

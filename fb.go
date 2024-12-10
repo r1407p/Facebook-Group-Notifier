@@ -24,10 +24,12 @@ func parseArgs() (string, string, string, int) {
 
 func main() {
 	account, password, groupID, postLimit := parseArgs()
-	fbcrawler := FBCrawler.NewFBCrawler(account, password, []string{groupID}, postLimit)
+
+	fbcrawler := FBCrawler.NewFBCrawler(account, password, groupID, postLimit)
 	fmt.Println(fbcrawler)
-	
+
 	if err := fbcrawler.LoginToFacebook(); err != nil {
 		log.Fatal("Login failed:", err)
 	}
+	return
 }
