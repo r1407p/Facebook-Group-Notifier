@@ -167,6 +167,9 @@ func (f *FBCrawler) ScanGroupPostsWithTopK(topK int) ([]PostInfo, error) {
 			newPosts = append(newPosts, post)
 		}
 	}
+	if len(f.viewedPosts) > 10 {
+		f.viewedPosts = f.viewedPosts[len(f.viewedPosts)-10:]
+	}
 	return newPosts, nil
 }
 
