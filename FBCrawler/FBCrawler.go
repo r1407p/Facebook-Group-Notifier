@@ -203,3 +203,20 @@ func (f *FBCrawler) clickNewPost() {
     }
     time.Sleep(3 * time.Second)
 }
+
+func (f *FBCrawler) FilterPosts(posts []PostInfo) []PostInfo {
+	var filteredPosts []PostInfo
+	for _, post := range posts {
+		for _, keyword := range f.keywords {
+			keywordRunes := []rune(keyword)
+			if len(keywordRunes) < 2 {
+				continue
+			}
+			if post.ContainsKeyword(string(keywordRunes)) {
+				filteredPosts = append(filteredPosts, post)
+				break
+			}
+		}
+	}
+	return filteredPosts
+}

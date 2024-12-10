@@ -34,7 +34,7 @@ func main() {
 	}
 	keywords := []string{
 		"冰箱", "手錶", "手套", "麻將", 
-		"GeForce", "BTS", "airpods"}
+		"GeForce", "BTS", "airpods", "二手"}
 	for _, keyword := range keywords {
 		fbcrawler.AddKeyword(keyword)
 	}
@@ -44,7 +44,11 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed to scan group posts:", err)
 		}
-		for _, post := range newPosts {
+		// for _, post := range newPosts {
+		// 	fmt.Println(post)
+		// }
+		post_with_keywords := fbcrawler.FilterPosts(newPosts)
+		for _, post := range post_with_keywords {
 			fmt.Println(post)
 		}
 		fmt.Println("Waiting for 10 minutes...")
