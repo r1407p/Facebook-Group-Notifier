@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"time"
 	"FBCrawler/FBCrawler"
 )
 
@@ -37,6 +38,13 @@ func main() {
 	for _, keyword := range keywords {
 		fbcrawler.AddKeyword(keyword)
 	}
-	
+	postInfos, err := fbcrawler.ScanGroupPostsWithTopK(5)
+	if err != nil {
+		log.Fatal("Failed to scan group posts:", err)
+	}
+
+	for _, postInfo := range postInfos {
+		fmt.Println(postInfo)
+	}
 	return
 }
