@@ -31,5 +31,12 @@ func main() {
 	if err := fbcrawler.LoginToFacebook(); err != nil {
 		log.Fatal("Login failed:", err)
 	}
+	keywords := []string{
+		"冰箱", "手錶", "手套", "麻將", 
+		"GeForce", "BTS", "airpods"}
+	for _, keyword := range keywords {
+		fbcrawler.AddKeyword(keyword)
+	}
+	
 	return
 }

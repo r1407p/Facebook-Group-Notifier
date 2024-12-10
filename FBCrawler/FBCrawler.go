@@ -11,6 +11,7 @@ type FBCrawler struct {
 	Password  string
 	GroupID  string
 	PostLimit int
+	keywords  []string
 	Driver	selenium.WebDriver
 }
 
@@ -38,6 +39,7 @@ func NewFBCrawler(account string, password string, groupID string, postLimit int
 		Password:  password,
 		GroupID:   groupID,
 		PostLimit: postLimit,
+		keywords:  []string{},
 		Driver:    driver,
 	}
 }
@@ -85,4 +87,8 @@ func (fbc *FBCrawler) LoginToFacebook() error {
 
 	time.Sleep(30 * time.Second) // Wait for login
 	return nil
+}
+
+func (fbc *FBCrawler) AddKeyword(keyword string) {
+	fbc.keywords = append(fbc.keywords, keyword)
 }
