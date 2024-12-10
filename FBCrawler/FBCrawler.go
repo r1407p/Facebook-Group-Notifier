@@ -11,7 +11,7 @@ type FBCrawler struct {
 	Password  string
 	GroupID  string
 	PostLimit int
-	keywords  []string
+	// keywords  []string
 	viewedPosts [] PostInfo
 	Driver	selenium.WebDriver
 }
@@ -40,7 +40,7 @@ func NewFBCrawler(account string, password string, groupID string, postLimit int
 		Password:  password,
 		GroupID:   groupID,
 		PostLimit: postLimit,
-		keywords:  []string{},
+		// keywords:  []string{},
 		viewedPosts: []PostInfo{},
 		Driver:    driver,
 	}
@@ -91,9 +91,9 @@ func (fbc *FBCrawler) LoginToFacebook() error {
 	return nil
 }
 
-func (fbc *FBCrawler) AddKeyword(keyword string) {
-	fbc.keywords = append(fbc.keywords, keyword)
-}
+// func (fbc *FBCrawler) AddKeyword(keyword string) {
+// 	fbc.keywords = append(fbc.keywords, keyword)
+// }
 
 func (f *FBCrawler) ScanGroupPostsWithTopK(topK int) ([]PostInfo, error) {
 	groupURL := fmt.Sprintf("https://www.facebook.com/groups/%s", f.GroupID)
@@ -207,10 +207,10 @@ func (f *FBCrawler) clickNewPost() {
     time.Sleep(3 * time.Second)
 }
 
-func (f *FBCrawler) FilterPosts(posts []PostInfo) []PostInfo {
+func (f *FBCrawler) FilterPosts(posts []PostInfo, keywords []string) []PostInfo {
 	var filteredPosts []PostInfo
 	for _, post := range posts {
-		for _, keyword := range f.keywords {
+		for _, keyword := range keywords {
 			keywordRunes := []rune(keyword)
 			if len(keywordRunes) < 2 {
 				continue
