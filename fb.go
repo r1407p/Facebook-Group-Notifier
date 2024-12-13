@@ -83,6 +83,29 @@ func updateKeywordsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func lineNotifyMessage(token, msg string) error {
+	apiUrl := "https://notify-api.line.me/api/notify"
+	data := url.Values{}
+	data.Set("message", msg)
+	req, err := http.NewRequest("POST", apiUrl, bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.New("status code is not 200")
+	}
+	return nil
+}
+
 func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	log.Println("/callback called...")
 
@@ -90,82 +113,99 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Printf("Cannot parse request: %+v\n", err)
 		if errors.Is(err, webhook.ErrInvalidSignature) {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		} else {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return
 	}
 
 	log.Println("Handling events...")
 	for _, event := range cb.Events {
-		log.Printf("/callback called%+v...\n", event)
+		log.Printf("Event received: %+v\n", event)
 
 		switch e := event.(type) {
 		case webhook.MessageEvent:
 			switch message := e.Message.(type) {
 			case webhook.TextMessageContent:
 				usermessage := message.Text
-				// usermessage will be "add ..." or "delete ..."
-				// parse the message and update keywords
-				// e.g., "add iPhone" -> add "iPhone" to keywords
-				// e.g., "delete iPhone" -> delete "iPhone" from keywords
-				// e.g., "list" -> list all keywords
-				// e.g., "clear" -> clear all keywords
-				
+
+				// Parse the message and handle commands
 				parts := strings.Fields(usermessage)
 				if len(parts) < 1 {
-					http.Error(w, "Invalid message format", http.StatusBadRequest)
-					return
+					log.Println("Invalid message format")
+					replyMessage(e.ReplyToken, "Invalid message format. Use commands like 'add <keyword>' or 'delete <keyword>'.")
+					continue
 				}
 
 				command := parts[0]
 				switch command {
 				case "add":
 					if len(parts) < 2 {
-						http.Error(w, "Missing keyword to add", http.StatusBadRequest)
-						return
+						log.Println("Missing keyword to add")
+						replyMessage(e.ReplyToken, "Missing keyword to add. Use: 'add <keyword>'.")
+						continue
 					}
 					newKeyword := parts[1]
 					keywordsMutex.Lock()
 					keywords = append(keywords, newKeyword)
 					keywordsMutex.Unlock()
-					fmt.Fprintf(w, "Keyword added: %s\n", newKeyword)
+					log.Printf("Keyword added: %s\n", newKeyword)
+					replyMessage(e.ReplyToken, "Keyword added: "+newKeyword)
 
 				case "delete":
 					if len(parts) < 2 {
-						http.Error(w, "Missing keyword to delete", http.StatusBadRequest)
-						return
+						log.Println("Missing keyword to delete")
+						replyMessage(e.ReplyToken, "Missing keyword to delete. Use: 'delete <keyword>'.")
+						continue
 					}
 					keywordToDelete := parts[1]
 					keywordsMutex.Lock()
+					deleted := false
 					for i, keyword := range keywords {
 						if keyword == keywordToDelete {
 							keywords = append(keywords[:i], keywords[i+1:]...)
+							deleted = true
 							break
 						}
 					}
 					keywordsMutex.Unlock()
-					fmt.Fprintf(w, "Keyword deleted: %s\n", keywordToDelete)
+					if deleted {
+						log.Printf("Keyword deleted: %s\n", keywordToDelete)
+						replyMessage(e.ReplyToken, "Keyword deleted: "+keywordToDelete)
+					} else {
+						log.Printf("Keyword not found: %s\n", keywordToDelete)
+						replyMessage(e.ReplyToken, "Keyword not found: "+keywordToDelete)
+					}
 
 				case "list":
 					keywordsMutex.Lock()
-					fmt.Fprintf(w, "Keywords: %v\n", keywords)
+					log.Printf("Keywords listed: %v\n", keywords)
+					replyMessage(e.ReplyToken, fmt.Sprintf("Keywords: %v", keywords))
 					keywordsMutex.Unlock()
 
 				case "clear":
 					keywordsMutex.Lock()
 					keywords = []string{}
 					keywordsMutex.Unlock()
-					fmt.Fprintf(w, "All keywords cleared\n")
+					log.Println("All keywords cleared")
+					replyMessage(e.ReplyToken, "All keywords cleared.")
 
 				default:
-					http.Error(w, "Unknown command", http.StatusBadRequest)
+					log.Printf("Unknown command: %s\n", command)
+					replyMessage(e.ReplyToken, "Unknown command. Supported commands: add, delete, list, clear.")
 				}
 			}
 		default:
-			log.Printf("Unsupported message: %T\n", event)
+			log.Printf("Unsupported event type: %T\n", event)
 		}
+	}
+}
+
+// replyMessage sends a text reply to the user
+func replyMessage(replyToken, message string) {
+	if _, err := bot.ReplyMessage(replyToken, linebot.NewTextMessage(message)).Do(); err != nil {
+		log.Printf("Failed to send reply: %v\n", err)
 	}
 }
 
@@ -227,7 +267,11 @@ func main() {
 		keywordsMutex.Unlock()
 
 		for _, post := range post_with_keywords {
-			fmt.Println(post)
+			message := fmt.Sprintf("New post: %s\n%s", post.Content, post.URL)
+			fmt.Println(message)
+			if err := lineNotifyMessage(notifyToken, message); err != nil {
+				log.Println("Failed to send LINE notify:", err)
+			}
 		}
 		fmt.Println("Waiting for 10 minutes...")
 		time.Sleep(10 * time.Minute)
