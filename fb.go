@@ -1,7 +1,7 @@
 package main
 
 import (
-	"FBCrawler/FBCrawler"
+	"FACEBOOK-GROUP-NOTIFIER/FBCrawler"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +12,7 @@ import (
 	"errors"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
@@ -204,8 +205,19 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 
 // replyMessage sends a text reply to the user
 func replyMessage(replyToken, message string) {
-	if _, err := bot.ReplyMessage(replyToken, linebot.NewTextMessage(message)).Do(); err != nil {
+	replyRequest := &messaging_api.ReplyMessageRequest{
+		ReplyToken: replyToken,
+		Messages: []messaging_api.MessageInterface{
+			messaging_api.TextMessage{
+				Text: message,
+			},
+		},
+	}
+
+	if _, err := bot.ReplyMessage(replyRequest); err != nil {
 		log.Printf("Failed to send reply: %v\n", err)
+	} else {
+		log.Println("Sent text reply.")
 	}
 }
 
@@ -214,11 +226,15 @@ func startAPIServer() {
 	http.HandleFunc("/callback", callbackHandler)
 
 	go func() {
-		log.Println("Starting API server on :8080")
+		log.Println("http://localhost:" + "8080" + "/")
 		if err := http.ListenAndServe(":8080", nil); err != nil {
 			log.Fatal("API server failed:", err)
 		}
 	}()
+	// fmt.Println("http://localhost:" + "8080" + "/")
+	// if err := http.ListenAndServe(":"+"8080", nil); err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 func main() {
@@ -243,8 +259,8 @@ func main() {
 
 	// Initial keywords
 	keywords = []string{
-		"冰箱", "手錶", "手套", "麻將",
-		"GeForce", "BTS", "airpods", "二手",
+		"冰箱", "手錶", "手套", "麻將", "工讀",
+		"GeForce", "BTS", "airpods", "二手", "電影票",
 	}
 	startAPIServer()
 	account, password, groupID, postLimit := parseArgs()
